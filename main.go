@@ -74,13 +74,31 @@ func handler() http.HandlerFunc {
 }
 
 func main() {
-	generateRSA()
 	readConfig()
 	http.HandleFunc("/", handler())
 
-	log.Println("Starting reverse proxy on :443")
-	err := http.ListenAndServeTLS(":443", "./cert.pem", "./key.pem", nil)
-	if err != nil {
-		log.Fatal(err)
-	}
+  env := os.Environ()
+  isHTTPS := false
+
+  for _, e := range env {
+    if strings.Contains(e, "HTTPS=true") {
+      isHTTPS = true
+      break
+    }
+  }
+
+  if isHTTPS {
+    generateRSA()
+    log.Println("Starting reverse proxy on :443")
+    err := http.ListenAndServeTLS(":443", "./cert.pem", "./key.pem", nil)
+    if err != nil {
+      log.Fatal(err)
+    }
+  } else {
+    log.Println("Starting reverse proxy on :80")
+    err := http.ListenAndServe(":80", nil)
+    if err != nil {
+      log.Fatal(err)
+    }
+  }
 }
